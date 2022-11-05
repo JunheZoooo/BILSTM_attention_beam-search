@@ -1,0 +1,28 @@
+BATCH_SIZE=2
+
+ENCODER:
+(max_seq_len,2,src_voc_size)
+embed(src_voc_size,embedding_size)
+(max_seq_len,2,embedding_size)
+LSTM(embedding_size,hidden_size,nlayer,bidirectional=True)
+enc_out:(max_seq_len,2,hidden_size), enc_last_hidden:((2*nlayer,2,hidden_size),(2*nlayer,2,hidden_size))
+
+DECODER:
+Attention(enc_last_hidden,enc_out)
+attn_weights:(1,2,hidden_size)
+context = attn_weights*enc_out
+context:(1,2,hidden_size)
+
+dec_input:(1,2,tgt_voc_size)
+embed(tgt_voc_size,embedding_size)
+word_emb:(1,2,embedding_size)
+(lstm)rnn_input:concat(word_emb,context)
+(lstm)rnn_input:(1,2,(hidden_size+embedding_size))
+LSTM((hidden_size+embedding_size),hidden_size,nlayer,bidirectional=False)
+dec_out:(1,2,hidden_size), dec_last_hidden:((nlayer,2,hidden_size),(nlayer,2,hidden_size))
+concat(dec_out, context)
+(1,2,hidden_size+hidden_size)
+linear(hidden_size+hidden_size,tgt_voc_size)
+(1,2,tgt_voc_size)
+SOFTMAX
+(1,2,tgt_voc_size)
